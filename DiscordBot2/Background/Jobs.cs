@@ -159,6 +159,11 @@ namespace DiscordBot2.Background
                 var doc = new XDocument(new XElement("body"));
                 doc.Save(GlobalVariables.RedditMemeWarOfTheDayFullPath);
             }
+            if (!File.Exists(GlobalVariables.RedditMemeconomyUsersFullPath))
+            {
+                var doc = new XDocument(new XElement("body"));
+                doc.Save(GlobalVariables.RedditMemeconomyUsersFullPath);
+            }
         }
     }
 }

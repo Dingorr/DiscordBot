@@ -23,8 +23,7 @@ namespace DiscordBot2
         }
     }
 
-    // Create a module with the 'sample' prefix
-    [Group("memeconomy")]
+    [Group("memeconomy"), Alias("meco")]
     public class Memeconomy : ModuleBase
     {
         // ~sample square 20 -> 400
@@ -46,12 +45,14 @@ namespace DiscordBot2
             await ReplyAsync(stringBuilder.ToString());
         }
 
-        [Command("userinfo"), Summary("Returns info about the current user, or the user parameter, if one passed.")]
-        [Alias("user", "whois")]
-        public async Task UserInfo([Summary("The (optional) user to get info for")] IUser user = null)
+        [Command("register"), Summary("Registers user")]
+        public async Task Register()
         {
-            var userInfo = user ?? Context.Client.CurrentUser;
-            await ReplyAsync($"{userInfo.Username}#{userInfo.Discriminator}");
+            
+            var userInfo = Context.Message.Author;
+            bool succesful = await XmlHelper.RegisterMemeconomyUser(userInfo.Username, userInfo.Id.ToString());
+            string reply = succesful ? $"{userInfo.Username} is now registered" : $"{userInfo.Username} is already registered";
+            await ReplyAsync(reply);
         }
     }
 }
