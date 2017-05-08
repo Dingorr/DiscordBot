@@ -48,11 +48,44 @@ namespace DiscordBot2
         [Command("register"), Summary("Registers user")]
         public async Task Register()
         {
-            
             var userInfo = Context.Message.Author;
             bool succesful = await XmlHelper.RegisterMemeconomyUser(userInfo.Username, userInfo.Id.ToString());
             string reply = succesful ? $"{userInfo.Username} is now registered" : $"{userInfo.Username} is already registered";
             await ReplyAsync(reply);
+        }
+
+        [Command("bet")]
+        public async Task Bet(string choice, int amount)
+        {
+            var user = Context.Message.Author;
+            var betInfo = await XmlHelper.MemeconomyGetInfoOfBetMeme(choice);
+            if(betInfo == null)
+            {
+                await ReplyAsync($"Choice is invalid");
+                return;
+            }
+
+            int status = await XmlHelper.MemeconomyBet(user.Id.ToString(), betInfo.FullName, amount);
+            if(status == 0)
+            {
+                await ReplyAsync($"{user.Username} has now betted on meme [{betInfo.Id}] - '{betInfo.PostName}' with {amount} points.");
+            }
+            else
+            {
+                switch(status)
+                {
+                    case 1:
+                    case 2:
+                        await ReplyAsync("Error in bet parameters.");
+                        break;
+                    case 3:
+                        await ReplyAsync("You do not have enough points to make that bet...");
+                        break;
+                    case 4:
+                        await ReplyAsync("You have already betted today.");
+                        break;
+                }
+            }
         }
     }
 }

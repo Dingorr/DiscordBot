@@ -66,10 +66,12 @@ namespace DiscordBot2.Background
 
                     var dayElement = new XElement("day");
                     dayElement.SetAttributeValue("date", DateTime.Now.ToShortDateString());
+                    int counter = 1;
 
                     foreach(var post in posts)
                     {
                         var memeElement = new XElement("meme");
+                        memeElement.SetAttributeValue("id", counter.ToString());
                         memeElement.SetAttributeValue("fullname", post.FullName);
                         memeElement.SetAttributeValue("name", post.Title);
                         memeElement.SetAttributeValue("url", post.Url.AbsoluteUri);
@@ -82,6 +84,7 @@ namespace DiscordBot2.Background
                         memeElement.Add(subEntry);
 
                         dayElement.Add(memeElement);
+                        counter++;
                     }
 
                     body.Add(dayElement);
