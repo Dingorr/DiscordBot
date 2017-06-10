@@ -11,7 +11,7 @@ namespace DiscordBot2.Helpers
 {
     static class XmlHelper
     {
-        public async static Task<string> GetRedditMemeOfTheDayAsync()
+        public static async Task<string> GetRedditMemeOfTheDayAsync()
         {
             string xmlPath = GlobalVariables.RedditMemeOfTheDayFullPath;
             DateTime date = GlobalVariables.CurrentDate;
@@ -25,7 +25,7 @@ namespace DiscordBot2.Helpers
             return url;
         }
 
-        public async static Task<IEnumerable<MemeWarEntry>> GetRedditMemeWarEntriesAsync()
+        public static async Task<IEnumerable<MemeWarEntry>> GetRedditMemeWarEntriesAsync()
         {
             string xmlPath = GlobalVariables.RedditMemeWarOfTheDayFullPath;
             DateTime date = GlobalVariables.CurrentDate;
@@ -53,7 +53,7 @@ namespace DiscordBot2.Helpers
         /// <param name="username">Discord username</param>
         /// <param name="userid">Discord ID</param>
         /// <returns>True if registration is succesful and false if user already exist</returns>
-        public async static Task<bool> RegisterMemeconomyUser(string username, string userid)
+        public static async Task<bool> RegisterMemeconomyUser(string username, string userid)
         {
             string xmlPath = GlobalVariables.RedditMemeconomyUsersFullPath;
             DateTime date = GlobalVariables.CurrentDate;
@@ -96,7 +96,7 @@ namespace DiscordBot2.Helpers
         /// 3 -> User has no more points
         /// 4 -> User has already betted today
         /// </returns>
-        public async static Task<int> MemeconomyBet(string userId, string postFullname, int amount)
+        public static async Task<int> MemeconomyBet(string userId, string postFullname, int amount)
         {
             string MWOTDXmlPath = GlobalVariables.RedditMemeWarOfTheDayFullPath;
             string MWOTDUserXmlPath = GlobalVariables.RedditMemeconomyUsersFullPath;
@@ -111,7 +111,7 @@ namespace DiscordBot2.Helpers
                 {
                     var doc = XDocument.Load(stream);
                     var dayNode = doc.FirstNode.Document.Descendants("day").First(x => x.Attribute("date").Value == date.ToShortDateString());
-                    memeNode = dayNode.Descendants("meme").Where(x => x.Attribute("fullname").Value == postFullname).FirstOrDefault();
+                    memeNode = dayNode.Descendants("meme").FirstOrDefault(x => x.Attribute("fullname").Value == postFullname);
 
                     if (memeNode == null)
                     {

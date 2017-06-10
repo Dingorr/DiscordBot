@@ -14,6 +14,7 @@ namespace DiscordBot2.Shared
         public const string RedditMemeWarOfTheDayXml = "/MemeWarOfTheDay.xml";
         public const string RedditMemeconomyUsersXml = "/MemeconomyUsersXml.xml";
         public const int StartOfDay = 6;
+        public const int MemeWarOfTheDayEnd = 20;
         public const int MemeconomyStartPoints = 100;
 
         public const int RedditMemeWarUpdateRate = 5;

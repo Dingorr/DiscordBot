@@ -68,6 +68,9 @@ namespace DiscordBot2.Background
                     dayElement.SetAttributeValue("date", DateTime.Now.ToShortDateString());
                     int counter = 1;
 
+                    var memesElement = new XElement("memes");
+                    dayElement.Add(memesElement);
+
                     foreach(var post in posts)
                     {
                         var memeElement = new XElement("meme");
@@ -83,7 +86,7 @@ namespace DiscordBot2.Background
                         subEntry.SetAttributeValue("score", post.Score);
                         memeElement.Add(subEntry);
 
-                        dayElement.Add(memeElement);
+                        memesElement.Add(memeElement);
                         counter++;
                     }
 
@@ -97,7 +100,7 @@ namespace DiscordBot2.Background
 
             if(currentDayNode != null)
             {
-                var memeNodes = currentDayNode.Descendants("meme");
+                var memeNodes = currentDayNode.Descendants("memes").FirstOrDefault().Descendants("meme");
                 await AddMemeWarOfTheDayEntry(memeNodes, doc);
             }
             else
@@ -107,11 +110,30 @@ namespace DiscordBot2.Background
 
                 if(lastDayNode != null)
                 {
-                    var memeNodes = lastDayNode.Descendants("meme");
+                    var memeNodes = lastDayNode.Descendants("memes").FirstOrDefault().Descendants("meme");
                     await AddMemeWarOfTheDayEntry(memeNodes, doc);
                 }
             }
 
+        }
+
+        public static async Task EndMemeWarOfTheDay()
+        {
+            if (DateTime.Now.Hour >= GlobalVariables.MemeWarOfTheDayEnd)
+            {
+                //Get final results
+                string path = GlobalVariables.RedditMemeWarOfTheDayFullPath;
+                var doc = XDocument.Load(path);
+                var body = doc.Descendants("body").First();
+                var dayNode = body.Descendants("day").First(x => x.Attribute("date").Value == DateTime.Now.ToShortDateString());
+
+                if (dayNode != null)
+                {
+                    var memeNodes = dayNode.Descendants("memes").FirstOrDefault().Descendants("meme");
+                    (int id, int score) = (-1, 0);
+
+                }
+            }
         }
 
         private static async Task AddMemeWarOfTheDayEntry(IEnumerable<XElement> nodes, XDocument parent)
@@ -169,4 +191,5 @@ namespace DiscordBot2.Background
             }
         }
     }
+
 }
