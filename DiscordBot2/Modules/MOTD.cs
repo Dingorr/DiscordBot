@@ -58,14 +58,14 @@ namespace DiscordBot2
         public async Task Bet(string choice, int amount)
         {
             var user = Context.Message.Author;
-            var betInfo = await XmlHelper.MemeconomyGetInfoOfBetMeme(choice);
+            var betInfo = await XmlHelper.MemeconomyGetInfoOfBetMemeAsync(choice);
             if(betInfo == null)
             {
                 await ReplyAsync($"Choice is invalid");
                 return;
             }
 
-            int status = await XmlHelper.MemeconomyBet(user.Id.ToString(), betInfo.FullName, amount);
+            int status = await XmlHelper.MemeconomyBetAsync(user.Id.ToString(), betInfo.FullName, amount);
             if(status == 0)
             {
                 await ReplyAsync($"{user.Username} has now betted on meme [{betInfo.Id}] - '{betInfo.PostName}' with {amount} points.");
@@ -85,6 +85,37 @@ namespace DiscordBot2
                         await ReplyAsync("You have already betted today.");
                         break;
                 }
+            }
+        }
+
+        [Command("winner")]
+        public async Task Winner()
+        {
+            var winner = await XmlHelper.MemeconomyGetWinnerAsync();
+
+            if(winner != null)
+            {
+                await ReplyAsync($"Winning meme of today is {winner.PostName} ({winner.Id}) - {winner.Url} with a total score of {winner.Score}");
+            }
+            else
+            {
+                await ReplyAsync($"No winner yet. Winner will be chosen at {GlobalVariables.MemeWarOfTheDayEnd} o'clock.");
+            }
+        }
+
+        [Command("points")]
+        public async Task Points()
+        {
+            var user = Context.Message.Author;
+            string points = await XmlHelper.MemeconomyGetPointsAsync(user.Id.ToString());
+
+            if(!string.IsNullOrWhiteSpace(points))
+            {
+                await ReplyAsync($"You have {points} points!");
+            }
+            else
+            {
+                await ReplyAsync($"You aren't registered yet. Type \"!memeconomy register\" to register");
             }
         }
     }

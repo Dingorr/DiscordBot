@@ -21,18 +21,19 @@ namespace DiscordBot2.Helpers
         public async Task<string> GetTopMEIRLDayURLAsync()
         {
             var meirl = await reddit.GetSubredditAsync("/r/me_irl");
-            return meirl.GetTop(FromTime.Day).First().Url.AbsoluteUri;
+            return (await meirl.GetTop(FromTime.Day, 1).First()).Url.AbsoluteUri;
         }
 
         public async Task<IEnumerable<Post>> GetNewestMemesAsync(int amount = 2)
         {
             var meirl = await reddit.GetSubredditAsync("/r/me_irl");
-            return meirl.New.Take(amount).AsEnumerable();
+            
+            return meirl.GetPosts(Subreddit.Sort.New, amount).ToEnumerable();
         }
 
         public async Task<Post> GetMemeByFullnameAsync(string fullname)
         {
-            return (Post)reddit.GetThingByFullname(fullname);
+            return (Post) await reddit.GetThingByFullnameAsync(fullname);
         }
     }
 }

@@ -17,6 +17,7 @@ namespace DiscordBot2.Background
         {
             await RedditTasks.GetMemeOfTheDay();
             await RedditTasks.GetMemeWarOfTheDay();
+            await RedditTasks.EndMemeWarOfTheDayAsync();
         }
 
         public static async Task Initialize()
@@ -35,6 +36,9 @@ namespace DiscordBot2.Background
                 var doc = XDocument.Load(path);
                 var body = doc.Descendants("body").First();
                 var mainNodes = body.Descendants("meme");
+
+                if (mainNodes == null)
+                    return;
 
                 if(!mainNodes.Any(x => x.Attribute("date").Value == DateTime.Now.ToShortDateString()))
                 {
@@ -68,9 +72,6 @@ namespace DiscordBot2.Background
                     dayElement.SetAttributeValue("date", DateTime.Now.ToShortDateString());
                     int counter = 1;
 
-                    var memesElement = new XElement("memes");
-                    dayElement.Add(memesElement);
-
                     foreach(var post in posts)
                     {
                         var memeElement = new XElement("meme");
@@ -86,7 +87,7 @@ namespace DiscordBot2.Background
                         subEntry.SetAttributeValue("score", post.Score);
                         memeElement.Add(subEntry);
 
-                        memesElement.Add(memeElement);
+                        dayElement.Add(memeElement);
                         counter++;
                     }
 
@@ -100,38 +101,85 @@ namespace DiscordBot2.Background
 
             if(currentDayNode != null)
             {
-                var memeNodes = currentDayNode.Descendants("memes").FirstOrDefault().Descendants("meme");
+                var memeNodes = currentDayNode.Descendants("meme");
                 await AddMemeWarOfTheDayEntry(memeNodes, doc);
             }
             else
             {
                 //If it is before start of new "day"
-                var lastDayNode = mainNodes.FirstOrDefault(x => x.Attribute("timestamp").Value == (DateTime.Now - new TimeSpan(1, 0, 0, 0)).ToShortDateString());
+                var lastDayNode = mainNodes.FirstOrDefault(x => x.Attribute("date").Value == (DateTime.Now - new TimeSpan(1, 0, 0, 0)).ToShortDateString());
 
                 if(lastDayNode != null)
                 {
-                    var memeNodes = lastDayNode.Descendants("memes").FirstOrDefault().Descendants("meme");
+                    var memeNodes = lastDayNode.Descendants("meme");
                     await AddMemeWarOfTheDayEntry(memeNodes, doc);
                 }
             }
 
         }
 
-        public static async Task EndMemeWarOfTheDay()
+        public static async Task EndMemeWarOfTheDayAsync()
         {
             if (DateTime.Now.Hour >= GlobalVariables.MemeWarOfTheDayEnd)
             {
                 //Get final results
                 string path = GlobalVariables.RedditMemeWarOfTheDayFullPath;
+
                 var doc = XDocument.Load(path);
                 var body = doc.Descendants("body").First();
-                var dayNode = body.Descendants("day").First(x => x.Attribute("date").Value == DateTime.Now.ToShortDateString());
+                var dayNode = body.Descendants("day").FirstOrDefault(x => x.Attribute("date").Value == DateTime.Now.ToShortDateString());
 
-                if (dayNode != null)
+                if (dayNode == null)
+                    return;
+
+                bool? hasWinner = dayNode?.Descendants("winner").Any();
+
+                if (hasWinner != null && !hasWinner.Value)
                 {
                     var memeNodes = dayNode.Descendants("memes").FirstOrDefault().Descendants("meme");
-                    (int id, int score) = (-1, 0);
+                    var winnerInfo = (id: -1, score: 0, fullname: string.Empty, url: string.Empty, title: string.Empty);
 
+                    foreach(var memeNode in memeNodes)
+                    {
+                        int score = int.Parse(memeNode.Descendants("entry").LastOrDefault().Attribute("score").Value);
+
+                        if(score > winnerInfo.score)
+                        {
+                            winnerInfo.score = score;
+                            winnerInfo.id = int.Parse(memeNode.Attribute("id").Value);
+                            winnerInfo.fullname = memeNode.Attribute("fullname").Value;
+                            winnerInfo.url = memeNode.Attribute("url").Value;
+                            winnerInfo.title = memeNode.Attribute("title").Value;
+                        }
+                    }
+
+                    var winnerMeme = new XElement("winner");
+                    winnerMeme.SetAttributeValue("id", winnerInfo.id.ToString());
+                    winnerMeme.SetAttributeValue("timestamp", DateTime.Now.ToShortTimeString());
+                    winnerMeme.SetAttributeValue("fullname", winnerInfo.fullname);
+                    winnerMeme.SetAttributeValue("url", winnerInfo.url);
+                    winnerMeme.SetAttributeValue("title", winnerInfo.title);
+                    dayNode.Add(winnerMeme);
+                    doc.Save(path);
+
+                    string userPath = GlobalVariables.RedditMemeconomyUsersFullPath;
+                    var userDoc = XDocument.Load(userPath);
+                    var userBody = userDoc.Descendants("body").First();
+                    var userBetted = userBody.Descendants("user").Where(u => u.Descendants("bet").Any(x => x.Attribute("date").Value == DateTime.Now.ToShortDateString()));
+
+                    foreach(var user in userBetted)
+                    {
+                        var bet = user.Descendants("bet").FirstOrDefault(x => x.Attribute("date").Value == DateTime.Now.ToShortDateString());
+                        string postFullname = bet.Attribute("post").Value;
+                        int currentPoints = int.Parse(user.Attribute("points").Value);
+                        int bettedPoints = int.Parse(bet.Attribute("points").Value);
+                        int pointsDelta = postFullname == winnerInfo.fullname ? bettedPoints : -bettedPoints;
+                        currentPoints += pointsDelta;
+
+                        user.SetAttributeValue("points", currentPoints.ToString());
+                    }
+
+                    userDoc.Save(userPath);
                 }
             }
         }

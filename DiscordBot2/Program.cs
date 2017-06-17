@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using DiscordBot2.Background;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DiscordBot2
 {
@@ -18,7 +19,7 @@ namespace DiscordBot2
 
         private CommandService commands;
         private DiscordSocketClient client;
-        private DependencyMap map;
+        private IServiceProvider services;
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
@@ -33,7 +34,8 @@ namespace DiscordBot2
                 LogLevel = LogSeverity.Verbose
             });
             commands = new CommandService();
-            map = new DependencyMap();
+            services = new ServiceCollection()
+                    .BuildServiceProvider();
 
             client.Log += Log;
             //client.MessageReceived += MessageReceived;
@@ -113,7 +115,7 @@ namespace DiscordBot2
             var context = new CommandContext(client, message);
             // Execute the command. (result does not indicate a return value, 
             // rather an object stating if the command executed succesfully)
-            var result = await commands.ExecuteAsync(context, argPos, map);
+            var result = await commands.ExecuteAsync(context, argPos, services);
             if (!result.IsSuccess)
                 await context.Channel.SendMessageAsync(result.ErrorReason);
         }

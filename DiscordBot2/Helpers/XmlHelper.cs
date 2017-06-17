@@ -19,7 +19,7 @@ namespace DiscordBot2.Helpers
             using (var stream = File.OpenRead(xmlPath))
             {
                 var doc = XDocument.Load(stream);
-                url = doc.FirstNode.Document.Descendants("meme").First(x => x.Attribute("date").Value == date.ToShortDateString()).Attribute("url").Value;
+                url = doc.FirstNode.Document.Descendants("meme").FirstOrDefault(x => x.Attribute("date").Value == date.ToShortDateString()).Attribute("url").Value;
             }
 
             return url;
@@ -96,7 +96,7 @@ namespace DiscordBot2.Helpers
         /// 3 -> User has no more points
         /// 4 -> User has already betted today
         /// </returns>
-        public static async Task<int> MemeconomyBet(string userId, string postFullname, int amount)
+        public static async Task<int> MemeconomyBetAsync(string userId, string postFullname, int amount)
         {
             string MWOTDXmlPath = GlobalVariables.RedditMemeWarOfTheDayFullPath;
             string MWOTDUserXmlPath = GlobalVariables.RedditMemeconomyUsersFullPath;
@@ -149,13 +149,13 @@ namespace DiscordBot2.Helpers
             if (userPoints <= 0)
                 return 3;
 
-            bool hasBettedToday = userNode.Descendants("bet").Any(x => x.Attribute("date").Value == DateTime.Now.ToShortDateString());
+            bool hasBettedToday = userNode.Descendants("bet").Any(x => x.Attribute("date").Value == date.ToShortDateString());
             if (hasBettedToday)
                 return 4;
 
             //Create bet
             var bet = new XElement("bet");
-            bet.SetAttributeValue("date", DateTime.Now.ToShortDateString());
+            bet.SetAttributeValue("date", date.ToShortDateString());
             bet.SetAttributeValue("post", postFullname);
             bet.SetAttributeValue("points", amount.ToString());
             userNode.SetAttributeValue("points", (userPoints - amount).ToString());
@@ -168,7 +168,7 @@ namespace DiscordBot2.Helpers
             return 0;
         }
 
-        public static async Task<MemeWarMeme> MemeconomyGetInfoOfBetMeme(string bet)
+        public static async Task<MemeWarMeme> MemeconomyGetInfoOfBetMemeAsync(string bet)
         {
             string xmlPath = GlobalVariables.RedditMemeWarOfTheDayFullPath;
             DateTime date = GlobalVariables.CurrentDate;
@@ -203,6 +203,73 @@ namespace DiscordBot2.Helpers
             bool memeNodeTaskSuccess = await memeNodeTask;
             return new MemeWarMeme(id, fullName, postName);
         }
+
+        public static async Task<MemeWarMeme> MemeconomyGetWinnerAsync()
+        {
+            string xmlPath = GlobalVariables.RedditMemeOfTheDayFullPath;
+            DateTime date = GlobalVariables.CurrentDate;
+            MemeWarMeme memeWarMeme = null;
+
+            var winnerTask = Task.Run(() =>
+            {
+                using (var stream = File.OpenRead(xmlPath))
+                {
+                    var doc = XDocument.Load(stream);
+                    var body = doc.Descendants("body").First();
+                    var dayNode = body.Descendants("day").FirstOrDefault(x => x.Attribute("date").Value == date.ToShortDateString());
+
+                    if (dayNode != null)
+                    {
+                        var winner = dayNode.Descendants("winner").FirstOrDefault();
+
+                        if (winner != null)
+                        {
+                            string id = winner.Attribute("id").Value;
+                            string fullName = winner.Attribute("fullname").Value;
+                            string postName = winner.Attribute("title").Value;
+                            string url = winner.Attribute("url").Value;
+                            int score = int.Parse(winner.Attribute("score").Value);
+
+                            memeWarMeme = new MemeWarMeme(id, fullName, postName, url, score);
+
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            });
+
+            bool hasWinner = await winnerTask;
+            return memeWarMeme;
+        }
+
+        public static async Task<string> MemeconomyGetPointsAsync(string userID)
+        {
+            string xmlPath = GlobalVariables.RedditMemeconomyUsersFullPath;
+            DateTime date = GlobalVariables.CurrentDate;
+            string points = string.Empty;
+
+            var userTask = Task.Run(() =>
+            {
+                using (var stream = File.OpenRead(xmlPath))
+                {
+                    var doc = XDocument.Load(stream);
+                    var body = doc.Descendants("body").First();
+                    var user = body.Descendants("user").FirstOrDefault(x => x.Attribute("id").Value == userID);
+
+                    if(user != null)
+                    {
+                        points = user.Attribute("points").Value;
+                        return true;
+                    }
+
+                    return false;
+                }
+            });
+
+            return points;
+        }
     }
 
     struct MemeWarEntry
@@ -222,12 +289,23 @@ namespace DiscordBot2.Helpers
         public string Id { get; private set; }
         public string FullName { get; private set; }
         public string PostName { get; private set; }
+        public string Url { get; private set; }
+        public int Score { get; private set; }
 
         public MemeWarMeme(string id, string fullName, string postName)
         {
             Id = id;
             FullName = fullName;
             PostName = postName;
+        }
+
+        public MemeWarMeme(string id, string fullName, string postName, string url, int score)
+        {
+            Id = id;
+            FullName = fullName;
+            PostName = postName;
+            Url = url;
+            Score = score;
         }
     }
 }
