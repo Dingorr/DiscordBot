@@ -268,6 +268,8 @@ namespace DiscordBot2.Helpers
                 }
             });
 
+            bool gotPoints = await userTask;
+
             return points;
         }
     }

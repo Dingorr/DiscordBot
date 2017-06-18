@@ -28,7 +28,7 @@ namespace DiscordBot2.Helpers
         {
             var meirl = await reddit.GetSubredditAsync("/r/me_irl");
             
-            return meirl.GetPosts(Subreddit.Sort.New, amount).ToEnumerable();
+            return (await meirl.GetPosts(Subreddit.Sort.New, amount + 1).ToList()).AsEnumerable();
         }
 
         public async Task<Post> GetMemeByFullnameAsync(string fullname)
