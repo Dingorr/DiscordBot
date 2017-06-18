@@ -24,7 +24,7 @@ namespace DiscordBot2.Helpers
             return (await meirl.GetTop(FromTime.Day, 1).First()).Url.AbsoluteUri;
         }
 
-        public async Task<IEnumerable<Post>> GetNewestMemesAsync(int amount = 2)
+        public async Task<IEnumerable<Post>> GetNewestMemesAsync(int amount = 4)
         {
             var meirl = await reddit.GetSubredditAsync("/r/me_irl");
             

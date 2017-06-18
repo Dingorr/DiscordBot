@@ -53,7 +53,7 @@ namespace DiscordBot2.Helpers
         /// <param name="username">Discord username</param>
         /// <param name="userid">Discord ID</param>
         /// <returns>True if registration is succesful and false if user already exist</returns>
-        public static async Task<bool> RegisterMemeconomyUser(string username, string userid)
+        public static async Task<bool> RegisterMemeconomyUserAsync(string username, string userid)
         {
             string xmlPath = GlobalVariables.RedditMemeconomyUsersFullPath;
             DateTime date = GlobalVariables.CurrentDate;
@@ -81,6 +81,29 @@ namespace DiscordBot2.Helpers
             }
 
             return returnVal;
+        }
+
+        public static async Task ResetMemeconomyUserAsync(string username, string userid)
+        {
+            string xmlPath = GlobalVariables.RedditMemeconomyUsersFullPath;
+            DateTime date = GlobalVariables.CurrentDate;
+            bool isRegistered = false;
+
+            using (var stream = File.OpenRead(xmlPath))
+            {
+                var doc = XDocument.Load(stream);
+                isRegistered = doc.FirstNode.Document.Descendants("user").Any(x => x.Attribute("id").Value == userid);
+            }
+
+            if (isRegistered)
+            {
+                var doc = XDocument.Load(xmlPath);
+                var body = doc.Descendants("body").First();
+                body.Descendants("user").FirstOrDefault(x => x.Attribute("id").Value == userid).Remove();
+                doc.Save(xmlPath);
+
+                await RegisterMemeconomyUserAsync(username, userid);
+            }
         }
 
         /// <summary>

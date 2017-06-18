@@ -26,7 +26,24 @@ namespace DiscordBot2
     [Group("memeconomy"), Alias("meco")]
     public class Memeconomy : ModuleBase
     {
-        // ~sample square 20 -> 400
+        public CommandService Commands { get; set; }
+
+        [Command]
+        public async Task Default()
+        {
+            var commands = Commands.Modules.FirstOrDefault(x => x.Name.ToLowerInvariant() == "memeconomy").Commands.Where(x => x.Name.ToLowerInvariant() != "default");
+            var cmdReply = new StringBuilder();
+            string cmdPrefix = "!memeconomy";
+            cmdReply.AppendLine("Available commands are:");
+
+            foreach(var command in commands)
+            {
+                cmdReply.AppendLine($"- \"{cmdPrefix} {command.Name}\" [{command.Summary}]");
+            }
+
+            await ReplyAsync(cmdReply.ToString());
+        }
+
         [Command("memes"), Summary("List memes in todays meme war")]
         public async Task Memes()
         {
@@ -45,16 +62,16 @@ namespace DiscordBot2
             await ReplyAsync(stringBuilder.ToString());
         }
 
-        [Command("register"), Summary("Registers user")]
+        [Command("register"), Summary("Register for betting")]
         public async Task Register()
         {
             var userInfo = Context.Message.Author;
-            bool succesful = await XmlHelper.RegisterMemeconomyUser(userInfo.Username, userInfo.Id.ToString());
+            bool succesful = await XmlHelper.RegisterMemeconomyUserAsync(userInfo.Username, userInfo.Id.ToString());
             string reply = succesful ? $"{userInfo.Username} is now registered" : $"{userInfo.Username} is already registered";
             await ReplyAsync(reply);
         }
 
-        [Command("bet")]
+        [Command("bet"), Summary("Bet on meme of the day")]
         public async Task Bet(string choice, int amount)
         {
             var user = Context.Message.Author;
@@ -88,7 +105,7 @@ namespace DiscordBot2
             }
         }
 
-        [Command("winner")]
+        [Command("winner"), Summary("Shows the meme which has won today")]
         public async Task Winner()
         {
             var winner = await XmlHelper.MemeconomyGetWinnerAsync();
@@ -103,7 +120,7 @@ namespace DiscordBot2
             }
         }
 
-        [Command("points")]
+        [Command("points"), Summary("Shows how many points you have")]
         public async Task Points()
         {
             var user = Context.Message.Author;
@@ -117,6 +134,13 @@ namespace DiscordBot2
             {
                 await ReplyAsync($"You aren't registered yet. Type \"!memeconomy register\" to register");
             }
+        }
+
+        [Command("restart"), Summary("Resets your Memeconomy user")]
+        public async Task RestartUser()
+        {
+            await XmlHelper.ResetMemeconomyUserAsync(Context.Message.Author.Username, Context.Message.Author.Id.ToString());
+            await ReplyAsync("You have now resetted your user");
         }
     }
 }

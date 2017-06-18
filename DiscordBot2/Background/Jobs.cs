@@ -141,7 +141,7 @@ namespace DiscordBot2.Background
 
                     foreach(var memeNode in memeNodes)
                     {
-                        int score = int.Parse(memeNode.Descendants("entry").LastOrDefault().Attribute("score").Value);
+                        int score = int.Parse(memeNode.Attribute("score").Value);
 
                         if(score > winnerInfo.score)
                         {
@@ -149,7 +149,7 @@ namespace DiscordBot2.Background
                             winnerInfo.id = int.Parse(memeNode.Attribute("id").Value);
                             winnerInfo.fullname = memeNode.Attribute("fullname").Value;
                             winnerInfo.url = memeNode.Attribute("url").Value;
-                            winnerInfo.title = memeNode.Attribute("title").Value;
+                            winnerInfo.title = memeNode.Attribute("name").Value;
                         }
                     }
 

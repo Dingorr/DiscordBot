@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Timers;
 using DiscordBot2.Background;
 using Microsoft.Extensions.DependencyInjection;
+using DiscordBot2.Helpers;
+using DiscordBot2.Shared;
 
 namespace DiscordBot2
 {
@@ -19,14 +21,18 @@ namespace DiscordBot2
 
         private CommandService commands;
         private DiscordSocketClient client;
+        private IServiceCollection serviceMap;
         private IServiceProvider services;
+        private Logger logger;
 
         public static void Main(string[] args)
             => new Program().MainAsync().GetAwaiter().GetResult();
 
         public async Task MainAsync()
         {
-            Task initialize = Jobs.Initialize();
+            logger = new Logger(GlobalVariables.LogFullPath);
+
+            await Jobs.Initialize();
             await Jobs.RunJobs();
 
             client = new DiscordSocketClient(new DiscordSocketConfig
@@ -34,8 +40,7 @@ namespace DiscordBot2
                 LogLevel = LogSeverity.Verbose
             });
             commands = new CommandService();
-            services = new ServiceCollection()
-                    .BuildServiceProvider();
+            serviceMap = new ServiceCollection();
 
             client.Log += Log;
             //client.MessageReceived += MessageReceived;
@@ -46,7 +51,6 @@ namespace DiscordBot2
             await client.LoginAsync(TokenType.Bot, token);
             await client.StartAsync();
 
-            await initialize;
             var timer = new Timer(TimerRefreshRate);
             timer.AutoReset = true;
             timer.Elapsed += Timer_Elapsed;
@@ -86,16 +90,11 @@ namespace DiscordBot2
             return Task.CompletedTask;
         }
 
-        private async Task MessageReceived(SocketMessage message)
-        {
-            if (message.Content == "!ping")
-            {
-                await message.Channel.SendMessageAsync("Pong!");
-            }
-        }
-
         public async Task InstallCommands()
         {
+            serviceMap.AddSingleton(logger);
+
+            services = serviceMap.BuildServiceProvider();
             // Hook the MessageReceived Event into our Command Handler
             client.MessageReceived += HandleCommand;
             await commands.AddModuleAsync<MOTD>();
